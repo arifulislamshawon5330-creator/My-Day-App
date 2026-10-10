@@ -34,6 +34,30 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Fix Java and Kotlin JVM target compatibility
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('project/app/build.gradle')
+          s = p.read_text()
+          marker = "    defaultConfig {"
+          addition = """    compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+
+          """
+          if 'kotlinOptions' not in s:
+              if marker not in s:
+                  raise SystemExit('Could not find defaultConfig block in app/build.gradle')
+              s = s.replace(marker, addition + marker, 1)
+          p.write_text(s)
+          PY
+
       - name: Build debug APK
         run: gradle --no-daemon -p project assembleDebug
 
